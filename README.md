@@ -1,7 +1,7 @@
 # Human_activity_recognition
 
 This model is to build a model to predict human activities such as 
-1 WALKING
+1 WALKING\n
 2 WALKING_UPSTAIRS
 3 WALKING_DOWNSTAIRS
 4 SITTING
