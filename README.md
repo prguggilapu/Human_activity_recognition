@@ -70,3 +70,6 @@ tBodyAccMean
 tBodyAccJerkMean
 tBodyGyroMean
 tBodyGyroJerkMean
+
+# Algorithms
+For raw data we will be using RNN models and for expert-engineered features we use the classic ML algorithms
