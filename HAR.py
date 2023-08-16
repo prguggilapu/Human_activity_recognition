@@ -411,3 +411,18 @@ plot_confusion_matrix(lr_svc_grid_results['confusion_matrix'], classes=labels, c
 plt.show()
 
 print_grid_search_attributes(lr_svc_grid_results['model'])
+
+"""# RBF Kernel SVM with GridSearch"""
+
+parameters = {'C':[2,8,16],\
+              'gamma': [ 0.0078125, 0.125, 2]}
+rbf_svm = SVC(kernel='rbf')
+rbf_svm_grid = GridSearchCV(rbf_svm,param_grid=parameters, n_jobs=-1)
+rbf_svm_grid_results = perform_model(rbf_svm_grid, x_train, y_train, x_test, y_test, class_labels=labels)
+
+plt.figure(figsize=(8,8))
+plt.grid(b=False)
+plot_confusion_matrix(rbf_svm_grid_results['confusion_matrix'], classes=labels, cmap=plt.cm.Greens)
+plt.show()
+
+print_grid_search_attributes(rbf_svm_grid_results['model'])
