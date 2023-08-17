@@ -421,8 +421,63 @@ rbf_svm_grid = GridSearchCV(rbf_svm,param_grid=parameters, n_jobs=-1)
 rbf_svm_grid_results = perform_model(rbf_svm_grid, x_train, y_train, x_test, y_test, class_labels=labels)
 
 plt.figure(figsize=(8,8))
-plt.grid(b=False)
+plt.grid()
 plot_confusion_matrix(rbf_svm_grid_results['confusion_matrix'], classes=labels, cmap=plt.cm.Greens)
 plt.show()
 
 print_grid_search_attributes(rbf_svm_grid_results['model'])
+
+"""# Decision Tree with GridSearch"""
+
+parameters = {'max_depth':np.arange(3,10,2)}
+dt = DecisionTreeClassifier()
+dt_grid = GridSearchCV(dt,param_grid=parameters, n_jobs=-1)
+dt_grid_results = perform_model(dt_grid, x_train, y_train, x_test, y_test, class_labels=labels)
+
+plt.figure(figsize=(8,8))
+plt.grid()
+plot_confusion_matrix(dt_grid_results['confusion_matrix'], classes=labels, cmap=plt.cm.Greens)
+plt.show()
+
+print_grid_search_attributes(dt_grid_results['model'])
+
+"""# Random Forest Classifier with GridSearch"""
+
+params = {'n_estimators': np.arange(10,201,20), 'max_depth':np.arange(3,15,2)}
+rfc = RandomForestClassifier()
+rfc_grid = GridSearchCV(rfc, param_grid=params, n_jobs=-1)
+rfc_grid_results = perform_model(rfc_grid, x_train, y_train, x_test, y_test, class_labels=labels)
+
+plt.figure(figsize=(8,8))
+plt.grid()
+plot_confusion_matrix(rfc_grid_results['confusion_matrix'], classes=labels, cmap=plt.cm.Greens)
+plt.show()
+
+print_grid_search_attributes(rfc_grid_results['model'])
+
+"""# Gradient Boosted Decision Trees With GridSearch"""
+
+param_grid = {'max_depth': np.arange(5,8,1), \
+             'n_estimators':np.arange(130,170,10)}
+gbdt = GradientBoostingClassifier()
+gbdt_grid = GridSearchCV(gbdt, param_grid=param_grid, n_jobs=-1)
+gbdt_grid_results = perform_model(gbdt_grid, x_train, y_train, x_test, y_test, class_labels=labels)
+
+plt.figure(figsize=(8,8))
+plt.grid(b=False)
+plot_confusion_matrix(gbdt_grid_results['confusion_matrix'], classes=labels, cmap=plt.cm.Greens)
+plt.show()
+
+print_grid_search_attributes(gbdt_grid_results['model'])
+
+from prettytable import PrettyTable
+ptable = PrettyTable()
+model = ['Logistic Regression','Linear SVC','RBF SVM classifier','DecisionTree','Random Forest','GradientBoosting DT']
+accuracy=[96.30,96.81,96.26,86.35,91.21,92.26]
+error=[3.70,3.19,3.74,3.65,8.79,7.74 ]
+number=[1,2,3,4,5,6]
+ptable.add_column("s.no",number)
+ptable.add_column("model",model)
+ptable.add_column("accuracy",accuracy)
+ptable.add_column("error",error)
+print(ptable)
