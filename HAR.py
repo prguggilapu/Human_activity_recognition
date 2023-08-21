@@ -374,16 +374,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 
-# Importing tensorflow
-np.random.seed(42)
-import tensorflow as tf
-
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import LSTM , BatchNormalization
-from keras.layers import Dense, Dropout
-from keras.regularizers import L1L2
-
 """# Logistic Regression with Grid Search"""
 
 parameters = {'C':[0.01, 0.1, 1, 10, 20, 30], 'penalty':['l2','l1']}
@@ -481,3 +471,154 @@ ptable.add_column("model",model)
 ptable.add_column("accuracy",accuracy)
 ptable.add_column("error",error)
 print(ptable)
+
+"""====================================================================================================="""
+""" MLP - based on signals"""
+# Importing tensorflow
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from keras import backend as K
+from keras.models import Sequential
+from keras.layers import LSTM , BatchNormalization
+from keras.layers import Dense, Dropout
+from keras.regularizers import L1L2
+
+ACTIVITIES = {
+    0: 'WALKING',
+    1: 'WALKING_UPSTAIRS',
+    2: 'WALKING_DOWNSTAIRS',
+    3: 'SITTING',
+    4: 'STANDING',
+    5: 'LAYING',
+}
+
+SIGNALS = [
+    "body_acc_x",
+    "body_acc_y",
+    "body_acc_z",
+    "body_gyro_x",
+    "body_gyro_y",
+    "body_gyro_z",
+    "total_acc_x",
+    "total_acc_y",
+    "total_acc_z",]
+
+# Utility function to print the confusion matrix
+def confusion_matrix_dl(Y_true, Y_pred):
+    Y_true = pd.Series([ACTIVITIES[y] for y in np.argmax(Y_true, axis=1)])
+    Y_pred = pd.Series([ACTIVITIES[y] for y in np.argmax(Y_pred, axis=1)])
+    return pd.crosstab(Y_true, Y_pred, rownames=['True'], colnames=['Pred'])
+
+# Utility function to read the data from csv file
+def _read_csv(filename):
+    return pd.read_csv(filename, delim_whitespace=True, header=None)
+
+# Utility function to load the signals
+def load_signals(subset):
+    signals_data = []
+
+    for signal in SIGNALS:
+        filename = f'UCI HAR Dataset/{subset}/Inertial Signals/{signal}_{subset}.txt'
+        signals_data.append(
+            _read_csv(filename).values
+        )
+
+    # Transpose is used to change the dimensionality of the output,
+    # aggregating the signals by combination of sample/timestep.
+    # Resultant shape is (7352 train/2947 test samples, 128 timesteps, 9 signals)
+    return np.transpose(signals_data, (1, 2, 0))
+
+def load_y(subset):
+    """
+    The objective that we are trying to predict is a integer, from 1 to 6,
+    that represents a human activity. We return a binary representation of
+    every sample objective as a 6 bits vector using One Hot Encoding
+    (https://pandas.pydata.org/pandas-docs/stable/generated/pandas.get_dummies.html)
+    """
+    filename = f'UCI HAR Dataset/{subset}/y_{subset}.txt'
+    y = _read_csv(filename)[0]
+
+    return pd.get_dummies(y).values
+
+def load_data():
+    """
+    Obtain the dataset from multiple files.
+    Returns: X_train, X_test, y_train, y_test
+    """
+    X_train, X_test = load_signals('train'), load_signals('test')
+    y_train, y_test = load_y('train'), load_y('test')
+
+    return X_train, X_test, y_train, y_test
+
+# Utility function to count the number of classes
+def _count_classes(y):
+    return len(set([tuple(category) for category in y]))
+
+from tensorflow.python.client import  device_lib
+print(device_lib.list_local_devices())
+
+""" Load data"""
+x_train, x_test, y_train, y_test = load_data()
+timesteps = len(x_train[0])
+input_dim = len(x_train[0][0])
+n_classes = _count_classes(y_train)
+print(timesteps)
+print(input_dim)
+print(len(x_train))
+
+""" Starting the 1st model"""
+model = Sequential()
+epochs = 30
+batch_size = 16
+n_hidden = 32
+model.add(LSTM(n_hidden, input_shape=(timesteps, input_dim)))
+# Adding a dropout layer
+model.add(Dropout(0.5))
+# Adding a dense output layer with sigmoid activation
+model.add(Dense(n_classes, activation='sigmoid'))
+model.summary()
+# Compiling the model
+model.compile(loss='categorical_crossentropy',
+              optimizer='rmsprop',
+              metrics=['accuracy'])
+
+model.fit(x_train,
+          y_train,
+          batch_size=batch_size,
+          validation_data=(x_test, y_test),
+          epochs=epochs)
+
+print(confusion_matrix_dl(y_test, model.predict(x_test)))
+
+score = model.evaluate(x_test, y_test)
+print(score)
+
+""" Starting 2nd model"""
+reg = L1L2(0.01, 0.01)
+model = Sequential()
+model.add(LSTM(64, input_shape=(timesteps, input_dim), return_sequences=True, bias_regularizer=reg))
+model.add(BatchNormalization())
+model.add(Dropout(0.70))
+model.add(LSTM(48))
+model.add(Dropout(0.70))
+model.add(Dense(n_classes, activation='sigmoid'))
+print("Model Summary: ")
+model.summary()
+
+# Compiling the model
+model.compile(loss='categorical_crossentropy',
+              optimizer='rmsprop',
+              metrics=['accuracy'])
+
+model.fit(x_train,
+          y_train,
+          batch_size=batch_size,
+          validation_data=(x_test, y_test),
+          epochs=epochs)
+
+print(confusion_matrix_dl(y_test, model.predict(x_test)))
+
+score = model.evaluate(x_test, y_test)
+print(score)
+
